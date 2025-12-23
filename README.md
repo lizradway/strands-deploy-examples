@@ -1,6 +1,6 @@
 # Strands Deploy Examples
 
-This repository contains example code and documentation for deploying Strands Agents to third-party container services.
+This repository contains unofficial example code and documentation for deploying Strands Agents to third-party container services.
 
 ## Overview
 
