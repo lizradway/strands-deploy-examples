@@ -1,0 +1,14 @@
+[project]
+name = "strands-python-gcp-deploy"
+version = "0.1.0"
+description = "A simple example of deploying a Strands Python SDK Agent to Google Cloud Run"
+readme = "README.md"
+requires-python = ">=3.11"
+dependencies = [
+    "fastapi>=0.124.4",
+    "httpx>=0.28.1",
+    "pydantic>=2.12.5",
+    "strands-agents[gemini]>=1.20.0",
+    "uvicorn[standard]>=0.38.0",
+]
+

@@ -1,0 +1,54 @@
+import { Agent } from '@strands-agents/sdk'
+import { OpenAIModel } from '@strands-agents/sdk/openai'
+import express, { type Request, type Response } from 'express'
+
+const PORT = process.env.PORT || 8080
+// Configure the agent with Open AI
+const agent = new Agent({
+  model: new OpenAIModel({
+  apiKey: process.env.OPENAI_API_KEY || '<openai-api-key>',
+  modelId: 'gpt-4o',
+  maxTokens: 1000,
+  temperature: 0.7,
+})
+})
+
+const app = express()
+
+// Health check endpoint (REQUIRED)
+app.get('/ping', (_, res) =>
+  res.json({
+    status: 'Healthy',
+    time_of_last_update: Math.floor(Date.now() / 1000),
+  })
+)
+
+// Agent invocation endpoint (REQUIRED)
+app.post('/invocations', express.raw({ type: '*/*' }), async (req, res) => {
+  try {
+    console.log('Request body type:', typeof req.body)
+    console.log('Request body:', req.body)
+    console.log('Content-Type:', req.headers['content-type'])
+
+    // Decode binary payload
+    const prompt = new TextDecoder().decode(req.body)
+
+    // Invoke the agent
+    const response = await agent.invoke(prompt)
+
+    // Return response
+    return res.json({ response })
+  } catch (err) {
+    console.error('Error processing request:', err)
+    return res.status(500).json({ error: 'Internal server error' })
+  }
+})
+
+// Start server
+app.listen(PORT, () => {
+  console.log(`🚀 AgentCore Runtime server listening on port ${PORT}`)
+  console.log(`📍 Endpoints:`)
+  console.log(`   POST http://0.0.0.0:${PORT}/invocations`)
+  console.log(`   GET  http://0.0.0.0:${PORT}/ping`)
+})
+
