@@ -109,8 +109,8 @@ if __name__ == "__main__":
 
 Create Dockerfile:
 ```dockerfile
-# Use Python base image
-FROM python:3.11
+# Use uv's Python base image
+FROM ghcr.io/astral-sh/uv:python3.11-bookworm-slim
 
 WORKDIR /app
 
@@ -196,11 +196,6 @@ kubectl apply -f k8s-deployment.yaml
 ```bash
 kubectl get pods
 kubectl get services
-```
-
-**Important**: After updating model credentials in the YAML, you must restart the deployment:
-```bash
-kubectl rollout restart deployment <app-name>
 ```
 
 ### Step 3: Test Your Deployment

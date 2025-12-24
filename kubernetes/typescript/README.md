@@ -235,11 +235,6 @@ kubectl get pods
 kubectl get services
 ```
 
-**Important**: After updating model credentials in the YAML, you must restart the deployment:
-```bash
-kubectl rollout restart deployment <app-name>
-```
-
 ### Step 3: Test Your Deployment
 
 1. Port forward to access the service:

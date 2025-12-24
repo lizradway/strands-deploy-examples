@@ -9,7 +9,7 @@ app = FastAPI(title="Strands Agent Server", version="1.0.0")
 
 # Note: Any supported model provider can be configured
 # Automatically uses process.env.OPENAI_API_KEY and defaults to gpt-4o
-model = OpenAIModel()
+model = OpenAIModel(model_id="gpt-4o")
 
 strands_agent = Agent(model=model)
 
