@@ -1,14 +1,14 @@
-# Python Deployment to Kubernetes
+# TypeScript Deployment to Kubernetes
 
-This guide covers deploying Python-based Strands agents to Kubernetes using Kind (Kubernetes in Docker) for local development.
+This guide covers deploying TypeScript-based Strands agents to Kubernetes using Kind (Kubernetes in Docker) for local development.
 
 ## Prerequisites
 
-- Python 3.10+
+- Node.js 20+
 - [Docker](https://www.docker.com/) installed and running
 - [Kind](https://kind.sigs.k8s.io/docs/user/quick-start/) installed
 - [kubectl](https://kubernetes.io/docs/tasks/tools/) installed
-- AWS credentials with Bedrock access permissions
+- AWS credentials with Bedrock access permissions (or alternative model provider credentials of your choice)
 
 ### Setup Kind Cluster
 
@@ -24,12 +24,7 @@ kubectl get nodes
 
 ### Quick Start Setup
 
-Install uv:
-```bash
-curl -LsSf https://astral.sh/uv/install.sh | sh
-```
-
-Configure AWS Credentials:
+Configure AWS Credentials for local Bedrock usage:
 ```bash
 export AWS_ACCESS_KEY_ID='<your-access-key>'
 export AWS_SECRET_ACCESS_KEY='<your-secret-key>'
@@ -40,90 +35,131 @@ export AWS_DEFAULT_REGION='us-east-1'
 Create Project:
 ```bash
 mkdir <app-name> && cd <app-name>
-uv init --python 3.11
-uv add fastapi uvicorn[standard] pydantic boto3 strands-agents
+npm init -y
+npm install @strands-agents/sdk express @types/express typescript ts-node
+npm install -D @types/node
 ```
 
 Project Structure:
 ```
 <app-name>/
-├── agent.py                # FastAPI application
+├── index.ts                # Express application
 ├── Dockerfile              # Container configuration
 ├── k8s-deployment.yaml     # Kubernetes manifests
-├── pyproject.toml          # Created by uv init
-└── uv.lock                 # Created automatically by uv
+├── package.json            # Created by npm init
+├── tsconfig.json           # TypeScript configuration
+└── package-lock.json       # Created automatically by npm
 ```
 
-Create agent.py:
-```python
-from fastapi import FastAPI, HTTPException
-from pydantic import BaseModel
-from typing import Dict, Any
-from datetime import datetime, timezone
-import os
-from strands import Agent
-from strands.models.bedrock import BedrockModel
+Create tsconfig.json:
+```json
+{
+  "compilerOptions": {
+    "target": "ES2020",
+    "module": "commonjs",
+    "outDir": "./dist",
+    "rootDir": "./",
+    "strict": true,
+    "esModuleInterop": true,
+    "skipLibCheck": true,
+    "forceConsistentCasingInFileNames": true
+  },
+  "include": ["*.ts"],
+  "exclude": ["node_modules", "dist"]
+}
+```
 
-app = FastAPI(title="Strands Agent Server", version="1.0.0")
+Update package.json scripts:
+```json
+{
+  "scripts": {
+    "build": "tsc",
+    "start": "node dist/index.js",
+    "dev": "ts-node index.ts"
+  }
+}
+```
 
-bedrock_model = BedrockModel(
-    model_id="anthropic.claude-3-5-sonnet-20241022-v2:0",
-    params={"temperature": 0.7, "max_tokens": 1000}
+Create index.ts:
+```typescript
+import { Agent } from '@strands-agents/sdk'
+import express, { type Request, type Response } from 'express'
+
+const PORT = Number(process.env.PORT) || 8080
+
+// Configure the agent with default Bedrock model
+const agent = new Agent()
+
+const app = express()
+
+// Middleware to parse JSON
+app.use(express.json())
+
+// Health check endpoint (REQUIRED)
+app.get('/ping', (_, res) =>
+  res.json({
+    status: 'healthy',
+  })
 )
 
-strands_agent = Agent(model=bedrock_model)
+// Agent invocation endpoint (REQUIRED)
+app.post('/invocations', async (req: Request, res: Response) => {
+  try {
+    const { input } = req.body
+    const prompt = input?.prompt || ''
+    
+    if (!prompt) {
+      return res.status(400).json({
+        detail: 'No prompt found in input. Please provide a "prompt" key in the input.'
+      })
+    }
 
-class InvocationRequest(BaseModel):
-    input: Dict[str, Any]
+    // Invoke the agent
+    const result = await agent.invoke(prompt)
+    
+    const response = {
+      message: result,
+      timestamp: new Date().toISOString(),
+      model: 'strands-agent',
+    }
 
-class InvocationResponse(BaseModel):
-    output: Dict[str, Any]
+    return res.json({ output: response })
+  } catch (err) {
+    console.error('Error processing request:', err)
+    return res.status(500).json({ 
+      detail: `Agent processing failed: ${err instanceof Error ? err.message : 'Unknown error'}` 
+    })
+  }
+})
 
-@app.post("/invocations", response_model=InvocationResponse)
-async def invoke_agent(request: InvocationRequest):
-    try:
-        user_message = request.input.get("prompt", "")
-        if not user_message:
-            raise HTTPException(
-                status_code=400,
-                detail="No prompt found in input. Please provide a 'prompt' key in the input."
-            )
-
-        result = strands_agent(user_message)
-        response = {
-            "message": result.message,
-            "timestamp": datetime.now(timezone.utc).isoformat(),
-            "model": "strands-agent",
-        }
-
-        return InvocationResponse(output=response)
-
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Agent processing failed: {str(e)}")
-
-@app.get("/ping")
-async def ping():
-    return {"status": "healthy"}
-
-if __name__ == "__main__":
-    import uvicorn
-    uvicorn.run(app, host="0.0.0.0", port=8080)
+// Start server
+app.listen(PORT, '0.0.0.0', () => {
+  console.log(`🚀 Strands Agent Server listening on port ${PORT}`)
+  console.log(`📍 Endpoints:`)
+  console.log(`   POST http://0.0.0.0:${PORT}/invocations`)
+  console.log(`   GET  http://0.0.0.0:${PORT}/ping`)
+})
 ```
 
 Create Dockerfile:
 ```dockerfile
-FROM python:3.11-slim
+FROM node:20-alpine
 
 WORKDIR /app
 
-COPY pyproject.toml uv.lock ./
-RUN uv sync --frozen --no-cache
+COPY package*.json ./
+RUN npm install
 
-COPY agent.py ./
+COPY . .
 
+# Build TypeScript
+RUN npm run build
+
+# Expose port
 EXPOSE 8080
 
-CMD ["uv", "run", "uvicorn", "agent:app", "--host", "0.0.0.0", "--port", "8080"]
+# Start application
+CMD ["npm", "start"]
 ```
 
 Create k8s-deployment.yaml:
@@ -150,11 +186,11 @@ spec:
         - containerPort: 8080
         env:
         - name: AWS_ACCESS_KEY_ID
-          value: "your-access-key"
+          value: "<your-access-key>"
         - name: AWS_SECRET_ACCESS_KEY
-          value: "your-secret-key"
+          value: "<your-secret-key>"
         - name: AWS_SESSION_TOKEN
-          value: "your-session-token"
+          value: "<your-session-token>"
         - name: AWS_DEFAULT_REGION
           value: "us-east-1"
 ---
@@ -175,35 +211,19 @@ spec:
 
 ## Deploying to Kubernetes
 
-This approach demonstrates how to deploy a custom agent using FastAPI and Docker to a local Kubernetes cluster.
+This approach demonstrates how to deploy a custom agent using Express.js and Docker to a local Kubernetes cluster.
 
 **Requirements**
 
-- **FastAPI Server**: Web server framework for handling requests
+- **Express.js Server**: Web server framework for handling requests
 - **`/invocations` Endpoint**: POST endpoint for agent interactions
 - **`/ping` Endpoint**: GET endpoint for health checks
 - **Container Engine**: Docker for building images
 - **Kubernetes Manifests**: Deployment and Service configurations
 - **AWS Credentials**: Access key, secret key, and session token (for temporary credentials)
 
-### Step 1: Configure AWS Credentials
 
-1. Update the AWS credentials in `k8s-deployment.yaml`:
-```yaml
-env:
-- name: AWS_ACCESS_KEY_ID
-  value: "your-access-key"
-- name: AWS_SECRET_ACCESS_KEY
-  value: "your-secret-key"
-- name: AWS_SESSION_TOKEN
-  value: "your-session-token"  # Required for temporary credentials
-- name: AWS_DEFAULT_REGION
-  value: "us-east-1"
-```
-
-**Note**: If your access key starts with "ASIA", you're using temporary credentials and must include the session token.
-
-### Step 2: Build and Load Docker Image
+### Step 1: Build and Load Docker Image
 
 1. Build your Docker image:
 ```bash
@@ -215,7 +235,7 @@ docker build -t <image-name>:latest .
 kind load docker-image <image-name>:latest --name <cluster-name>
 ```
 
-### Step 3: Deploy to Kubernetes
+### Step 2: Deploy to Kubernetes
 
 1. Apply the Kubernetes manifests:
 ```bash
@@ -233,7 +253,7 @@ kubectl get services
 kubectl rollout restart deployment <app-name>
 ```
 
-### Step 4: Test Your Deployment
+### Step 3: Test Your Deployment
 
 1. Port forward to access the service:
 ```bash
@@ -251,7 +271,7 @@ curl -X POST http://localhost:8080/invocations \
   -d '{"input": {"prompt": "Hello, how are you?"}}'
 ```
 
-### Step 5: Making Changes
+### Step 4: Making Changes
 
 When you modify your code, redeploy with:
 
@@ -266,16 +286,16 @@ kind load docker-image <image-name>:latest --name <cluster-name>
 kubectl rollout restart deployment <app-name>
 ```
 
-
 ## Troubleshooting
 
 - **Pod not starting**: Check logs with `kubectl logs <pod-name>`
 - **Connection refused**: Verify app is listening on 0.0.0.0:8080
 - **Image not found**: Ensure image is loaded with `kind load docker-image`
-- **Dependencies missing**: Check `pyproject.toml` and rebuild image
+- **Dependencies missing**: Check `package.json` and rebuild image
 - **"Unable to locate credentials"**: Verify AWS credentials are set and restart deployment
 - **AWS credentials not found**: Check environment variables with `kubectl exec <pod-name> -- env | grep AWS`
 - **Bedrock access denied**: Ensure your AWS role has `bedrock:InvokeModel` permissions
+- **TypeScript compilation errors**: Check `tsconfig.json` and run `npm run build` locally
 
 ## Cleanup
 
