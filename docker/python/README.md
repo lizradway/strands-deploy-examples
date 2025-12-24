@@ -24,7 +24,7 @@ Configure Model Provider Credentials:
 export OPENAI_API_KEY='<your-api-key>'
 ```
 
-**Note**: This example uses OpenAI, but any supported model provider can be configured. See the [Strands documentation](https://strandsagents.com/latest/documentation/docs/user-guide/quickstart/python/#configuring-credentials) for other model providers.
+**Note**: This example uses OpenAI, but any supported model provider can be configured. See the [Strands documentation](https://strandsagents.com/latest/documentation/docs/user-guide/concepts/model-providers) for all supported model providers.
 
 Create Project:
 ```bash
@@ -48,18 +48,15 @@ from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel
 from typing import Dict, Any
 from datetime import datetime, timezone
-import os
 from strands import Agent
+from strands.models.openai import OpenAIModel
 
 app = FastAPI(title="Strands Agent Server", version="1.0.0")
 
 # Note: Any supported model provider can be configured
-model = OpenAIModel(
-    client_args={
-        "api_key": "<your-api-key>",
-    },
-    model_id="gpt-4o",
-)
+# Automatically uses process.env.OPENAI_API_KEY and defaults to gpt-4o
+model = OpenAIModel()
+
 strands_agent = Agent(model=model)
 
 class InvocationRequest(BaseModel):
@@ -102,18 +99,26 @@ if __name__ == "__main__":
 
 Create Dockerfile:
 ```dockerfile
+# Use Python base image
 FROM python:3.11
 
 WORKDIR /app
 
+# Copy uv files
 COPY pyproject.toml uv.lock ./
+
+# Install dependencies
 RUN uv sync --frozen --no-cache
 
+# Copy agent file
 COPY agent.py ./
 
+# Expose port
 EXPOSE 8080
 
+# Run application
 CMD ["uv", "run", "uvicorn", "agent:app", "--host", "0.0.0.0", "--port", "8080"]
+
 ```
 
 ### Step 1: Build Docker Image

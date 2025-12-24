@@ -1,4 +1,4 @@
-# Use uv's ARM64 Python base image
+# Use Python base image
 FROM python:3.11
 
 WORKDIR /app
@@ -6,7 +6,7 @@ WORKDIR /app
 # Copy uv files
 COPY pyproject.toml uv.lock ./
 
-# Install dependencies (including strands-agents)
+# Install dependencies
 RUN uv sync --frozen --no-cache
 
 # Copy agent file

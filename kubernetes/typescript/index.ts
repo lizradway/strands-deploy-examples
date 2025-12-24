@@ -5,10 +5,8 @@ import { OpenAIModel } from '@strands-agents/sdk/openai'
 const PORT = Number(process.env.PORT) || 8080
 
 // Note: Any supported model provider can be configured
-const model = new OpenAIModel({
-  apiKey: process.env.OPENAI_API_KEY || '<your-api-key>',
-  modelId: 'gpt-4o',
-})
+// Automatically uses process.env.OPENAI_API_KEY and defaults to gpt-4o
+const model = new OpenAIModel()
 
 const agent = new Agent({ model })
 

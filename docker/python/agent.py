@@ -2,18 +2,15 @@ from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel
 from typing import Dict, Any
 from datetime import datetime, timezone
-import os
 from strands import Agent
+from strands.models.openai import OpenAIModel
 
 app = FastAPI(title="Strands Agent Server", version="1.0.0")
 
 # Note: Any supported model provider can be configured
-model = OpenAIModel(
-    client_args={
-        "api_key": "<your-api-key>",
-    },
-    model_id="gpt-4o",
-)
+# Automatically uses process.env.OPENAI_API_KEY and defaults to gpt-4o
+model = OpenAIModel()
+
 strands_agent = Agent(model=model)
 
 class InvocationRequest(BaseModel):

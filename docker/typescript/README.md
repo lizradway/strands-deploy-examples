@@ -16,11 +16,10 @@ This guide covers deploying TypeScript-based Strands agents using Docker for loc
 
 Configure Model Provider Credentials:
 ```bash
-# OpenAI (used in this example)
 export OPENAI_API_KEY='<your-api-key>'
 ```
 
-**Note**: This example uses OpenAI, but any supported model provider can be configured. See the [Strands model credential documentation](https://strandsagents.com/latest/documentation/docs/user-guide/quickstart/typescript/#configuring-credentials) for other model providers.
+**Note**: This example uses OpenAI, but any supported model provider can be configured. See the [Strands documentation](https://strandsagents.com/latest/documentation/docs/user-guide/concepts/model-providers) for all supported model providers.
 
 Create Project:
 ```bash
@@ -73,14 +72,13 @@ Create index.ts:
 ```typescript
 import { Agent } from '@strands-agents/sdk'
 import express, { type Request, type Response } from 'express'
+import { OpenAIModel } from '@strands-agents/sdk/openai'
 
 const PORT = Number(process.env.PORT) || 8080
 
 // Note: Any supported model provider can be configured
-const model = new OpenAIModel({
-  apiKey: process.env.OPENAI_API_KEY || '<your-api-key>',
-  modelId: 'gpt-4o',
-})
+// Automatically uses process.env.OPENAI_API_KEY and defaults to gpt-4o
+const model = new OpenAIModel()
 
 const agent = new Agent({ model })
 
