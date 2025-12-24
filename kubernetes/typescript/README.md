@@ -147,9 +147,13 @@ FROM node:20-alpine
 
 WORKDIR /app
 
+# Copy package files
 COPY package*.json ./
+
+# Install dependencies
 RUN npm install
 
+# Copy source code
 COPY . .
 
 # Build TypeScript
@@ -158,7 +162,7 @@ RUN npm run build
 # Expose port
 EXPOSE 8080
 
-# Start application
+# Start the application
 CMD ["npm", "start"]
 ```
 
@@ -210,18 +214,6 @@ spec:
 ---
 
 ## Deploying to Kubernetes
-
-This approach demonstrates how to deploy a custom agent using Express.js and Docker to a local Kubernetes cluster.
-
-**Requirements**
-
-- **Express.js Server**: Web server framework for handling requests
-- **`/invocations` Endpoint**: POST endpoint for agent interactions
-- **`/ping` Endpoint**: GET endpoint for health checks
-- **Container Engine**: Docker for building images
-- **Kubernetes Manifests**: Deployment and Service configurations
-- **AWS Credentials**: Access key, secret key, and session token (for temporary credentials)
-
 
 ### Step 1: Build and Load Docker Image
 

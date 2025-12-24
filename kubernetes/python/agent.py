@@ -8,7 +8,6 @@ app = FastAPI(title="Strands Agent Server", version="1.0.0")
 
 strands_agent = Agent()
 
-
 class InvocationRequest(BaseModel):
     input: Dict[str, Any]
 

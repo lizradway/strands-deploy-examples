@@ -8,7 +8,7 @@ This guide covers deploying Python-based Strands agents to Kubernetes using Kind
 - [Docker](https://www.docker.com/) installed and running
 - [Kind](https://kind.sigs.k8s.io/docs/user/quick-start/) installed
 - [kubectl](https://kubernetes.io/docs/tasks/tools/) installed
-- AWS credentials with Bedrock access permissions
+- AWS credentials with Bedrock access permissions (or alternative model provider credentials of your choice)
 
 ### Setup Kind Cluster
 
@@ -59,19 +59,12 @@ Create agent.py:
 from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel
 from typing import Dict, Any
-from datetime import datetime, timezone
-import os
+from datetime import datetime,timezone
 from strands import Agent
-from strands.models.bedrock import BedrockModel
 
 app = FastAPI(title="Strands Agent Server", version="1.0.0")
 
-bedrock_model = BedrockModel(
-    model_id="anthropic.claude-3-5-sonnet-20241022-v2:0",
-    params={"temperature": 0.7, "max_tokens": 1000}
-)
-
-strands_agent = Agent(model=bedrock_model)
+strands_agent = Agent()
 
 class InvocationRequest(BaseModel):
     input: Dict[str, Any]
@@ -112,17 +105,24 @@ if __name__ == "__main__":
 
 Create Dockerfile:
 ```dockerfile
+# Use Python base image
 FROM python:3.11-slim
 
 WORKDIR /app
 
+# Copy uv files
 COPY pyproject.toml uv.lock ./
+
+# Install dependencies
 RUN uv sync --frozen --no-cache
 
+# Copy agent file
 COPY agent.py ./
 
+# Expose port
 EXPOSE 8080
 
+# Run application
 CMD ["uv", "run", "uvicorn", "agent:app", "--host", "0.0.0.0", "--port", "8080"]
 ```
 
@@ -150,11 +150,11 @@ spec:
         - containerPort: 8080
         env:
         - name: AWS_ACCESS_KEY_ID
-          value: "your-access-key"
+          value: "<your-access-key>"
         - name: AWS_SECRET_ACCESS_KEY
-          value: "your-secret-key"
+          value: "<your-secret-key>"
         - name: AWS_SESSION_TOKEN
-          value: "your-session-token"
+          value: "<your-session-token>"
         - name: AWS_DEFAULT_REGION
           value: "us-east-1"
 ---
@@ -175,35 +175,7 @@ spec:
 
 ## Deploying to Kubernetes
 
-This approach demonstrates how to deploy a custom agent using FastAPI and Docker to a local Kubernetes cluster.
-
-**Requirements**
-
-- **FastAPI Server**: Web server framework for handling requests
-- **`/invocations` Endpoint**: POST endpoint for agent interactions
-- **`/ping` Endpoint**: GET endpoint for health checks
-- **Container Engine**: Docker for building images
-- **Kubernetes Manifests**: Deployment and Service configurations
-- **AWS Credentials**: Access key, secret key, and session token (for temporary credentials)
-
-### Step 1: Configure AWS Credentials
-
-1. Update the AWS credentials in `k8s-deployment.yaml`:
-```yaml
-env:
-- name: AWS_ACCESS_KEY_ID
-  value: "your-access-key"
-- name: AWS_SECRET_ACCESS_KEY
-  value: "your-secret-key"
-- name: AWS_SESSION_TOKEN
-  value: "your-session-token"  # Required for temporary credentials
-- name: AWS_DEFAULT_REGION
-  value: "us-east-1"
-```
-
-**Note**: If your access key starts with "ASIA", you're using temporary credentials and must include the session token.
-
-### Step 2: Build and Load Docker Image
+### Step 1: Build and Load Docker Image
 
 1. Build your Docker image:
 ```bash
@@ -215,7 +187,7 @@ docker build -t <image-name>:latest .
 kind load docker-image <image-name>:latest --name <cluster-name>
 ```
 
-### Step 3: Deploy to Kubernetes
+### Step 2: Deploy to Kubernetes
 
 1. Apply the Kubernetes manifests:
 ```bash
@@ -233,7 +205,7 @@ kubectl get services
 kubectl rollout restart deployment <app-name>
 ```
 
-### Step 4: Test Your Deployment
+### Step 3: Test Your Deployment
 
 1. Port forward to access the service:
 ```bash
@@ -251,7 +223,7 @@ curl -X POST http://localhost:8080/invocations \
   -d '{"input": {"prompt": "Hello, how are you?"}}'
 ```
 
-### Step 5: Making Changes
+### Step 4: Making Changes
 
 When you modify your code, redeploy with:
 
