@@ -8,7 +8,7 @@ This guide covers deploying TypeScript-based Strands agents to Kubernetes using 
 - [Docker](https://www.docker.com/) installed and running
 - [Kind](https://kind.sigs.k8s.io/docs/user/quick-start/) installed
 - [kubectl](https://kubernetes.io/docs/tasks/tools/) installed
-- AWS credentials with Bedrock access permissions (or alternative model provider credentials of your choice)
+- Model provider credentials
 
 ### Setup Kind Cluster
 
@@ -24,13 +24,12 @@ kubectl get nodes
 
 ### Quick Start Setup
 
-Configure AWS Credentials for local Bedrock usage:
+Configure Model Provider Credentials:
 ```bash
-export AWS_ACCESS_KEY_ID='<your-access-key>'
-export AWS_SECRET_ACCESS_KEY='<your-secret-key>'
-export AWS_SESSION_TOKEN='<your-session-token>'  # Required for temporary credentials
-export AWS_DEFAULT_REGION='us-east-1'
+export OPENAI_API_KEY='<your-api-key>'
 ```
+
+**Note**: This example uses OpenAI, but any supported model provider can be configured. See the [Strands model credential documentation](https://strandsagents.com/latest/documentation/docs/user-guide/quickstart/typescript/#configuring-credentials) for other model providers.
 
 Create Project:
 ```bash
@@ -87,22 +86,27 @@ import express, { type Request, type Response } from 'express'
 
 const PORT = Number(process.env.PORT) || 8080
 
-// Configure the agent with default Bedrock model
-const agent = new Agent()
+// Note: Any supported model provider can be configured
+const model = new OpenAIModel({
+  apiKey: process.env.OPENAI_API_KEY || '<your-api-key>',
+  modelId: 'gpt-4o',
+})
+
+const agent = new Agent({ model })
 
 const app = express()
 
 // Middleware to parse JSON
 app.use(express.json())
 
-// Health check endpoint (REQUIRED)
+// Health check endpoint
 app.get('/ping', (_, res) =>
   res.json({
     status: 'healthy',
   })
 )
 
-// Agent invocation endpoint (REQUIRED)
+// Agent invocation endpoint
 app.post('/invocations', async (req: Request, res: Response) => {
   try {
     const { input } = req.body
@@ -139,6 +143,7 @@ app.listen(PORT, '0.0.0.0', () => {
   console.log(`   POST http://0.0.0.0:${PORT}/invocations`)
   console.log(`   GET  http://0.0.0.0:${PORT}/ping`)
 })
+
 ```
 
 Create Dockerfile:
@@ -187,14 +192,8 @@ spec:
         ports:
         - containerPort: 8080
         env:
-        - name: AWS_ACCESS_KEY_ID
-          value: "<your-access-key>"
-        - name: AWS_SECRET_ACCESS_KEY
-          value: "<your-secret-key>"
-        - name: AWS_SESSION_TOKEN
-          value: "<your-session-token>"
-        - name: AWS_DEFAULT_REGION
-          value: "us-east-1"
+        - name: OPENAI_API_KEY
+          value: "<your-api-key>"
 ---
 apiVersion: v1
 kind: Service
@@ -238,7 +237,7 @@ kubectl get pods
 kubectl get services
 ```
 
-**Important**: After updating AWS credentials in the YAML, you must restart the deployment:
+**Important**: After updating model credentials in the YAML, you must restart the deployment:
 ```bash
 kubectl rollout restart deployment <app-name>
 ```
@@ -282,9 +281,7 @@ kubectl rollout restart deployment <app-name>
 - **Connection refused**: Verify app is listening on 0.0.0.0:8080
 - **Image not found**: Ensure image is loaded with `kind load docker-image`
 - **Dependencies missing**: Check `package.json` and rebuild image
-- **"Unable to locate credentials"**: Verify AWS credentials are set and restart deployment
-- **AWS credentials not found**: Check environment variables with `kubectl exec <pod-name> -- env | grep AWS`
-- **Bedrock access denied**: Ensure your AWS role has `bedrock:InvokeModel` permissions
+- **"Unable to locate credentials"**: Verify model credentials are set and restart deployment
 - **TypeScript compilation errors**: Check `tsconfig.json` and run `npm run build` locally
 
 ## Cleanup

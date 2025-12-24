@@ -1,24 +1,30 @@
 import { Agent } from '@strands-agents/sdk'
 import express, { type Request, type Response } from 'express'
+import { OpenAIModel } from '@strands-agents/sdk/openai'
 
 const PORT = Number(process.env.PORT) || 8080
 
-// Configure the agent with default Bedrock model
-const agent = new Agent()
+// Note: Any supported model provider can be configured
+const model = new OpenAIModel({
+  apiKey: process.env.OPENAI_API_KEY || '<your-api-key>',
+  modelId: 'gpt-4o',
+})
+
+const agent = new Agent({ model })
 
 const app = express()
 
 // Middleware to parse JSON
 app.use(express.json())
 
-// Health check endpoint (REQUIRED)
+// Health check endpoint
 app.get('/ping', (_, res) =>
   res.json({
     status: 'healthy',
   })
 )
 
-// Agent invocation endpoint (REQUIRED)
+// Agent invocation endpoint
 app.post('/invocations', async (req: Request, res: Response) => {
   try {
     const { input } = req.body

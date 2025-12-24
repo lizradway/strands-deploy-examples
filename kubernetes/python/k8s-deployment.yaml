@@ -19,14 +19,8 @@ spec:
         ports:
         - containerPort: 8080
         env:
-        - name: AWS_ACCESS_KEY_ID
-          value: "<your-access-key>"
-        - name: AWS_SECRET_ACCESS_KEY
-          value: "<your-secret-key>"
-        - name: AWS_SESSION_TOKEN
-          value: "<your-session-token>"
-        - name: AWS_DEFAULT_REGION
-          value: "us-east-1"
+        - name: OPENAI_API_KEY
+          value: "<your-api-key>"
 ---
 apiVersion: v1
 kind: Service

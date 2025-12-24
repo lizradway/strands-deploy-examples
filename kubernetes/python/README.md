@@ -8,7 +8,7 @@ This guide covers deploying Python-based Strands agents to Kubernetes using Kind
 - [Docker](https://www.docker.com/) installed and running
 - [Kind](https://kind.sigs.k8s.io/docs/user/quick-start/) installed
 - [kubectl](https://kubernetes.io/docs/tasks/tools/) installed
-- AWS credentials with Bedrock access permissions (or alternative model provider credentials of your choice)
+- Model provider credentials
 
 ### Setup Kind Cluster
 
@@ -29,19 +29,18 @@ Install uv:
 curl -LsSf https://astral.sh/uv/install.sh | sh
 ```
 
-Configure AWS Credentials:
+Configure Model Provider Credentials:
 ```bash
-export AWS_ACCESS_KEY_ID='<your-access-key>'
-export AWS_SECRET_ACCESS_KEY='<your-secret-key>'
-export AWS_SESSION_TOKEN='<your-session-token>'  # Required for temporary credentials
-export AWS_DEFAULT_REGION='us-east-1'
+export OPENAI_API_KEY='<your-api-key>'
 ```
+
+**Note**: This example uses OpenAI, but any supported model provider can be configured. See the [Strands model credential documentation](https://strandsagents.com/latest/documentation/docs/user-guide/quickstart/python/#configuring-credentials) for other model providers.
 
 Create Project:
 ```bash
 mkdir <app-name> && cd <app-name>
 uv init --python 3.11
-uv add fastapi uvicorn[standard] pydantic boto3 strands-agents
+uv add fastapi uvicorn[standard] pydantic strands-agents
 ```
 
 Project Structure:
@@ -59,12 +58,20 @@ Create agent.py:
 from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel
 from typing import Dict, Any
-from datetime import datetime,timezone
+from datetime import datetime, timezone
+import os
 from strands import Agent
 
 app = FastAPI(title="Strands Agent Server", version="1.0.0")
 
-strands_agent = Agent()
+# Note: Any supported model provider can be configured
+model = OpenAIModel(
+    client_args={
+        "api_key": "<your-api-key>",
+    },
+    model_id="gpt-4o",
+)
+strands_agent = Agent(model=model)
 
 class InvocationRequest(BaseModel):
     input: Dict[str, Any]
@@ -106,7 +113,7 @@ if __name__ == "__main__":
 Create Dockerfile:
 ```dockerfile
 # Use Python base image
-FROM python:3.11-slim
+FROM python:3.11
 
 WORKDIR /app
 
@@ -149,14 +156,8 @@ spec:
         ports:
         - containerPort: 8080
         env:
-        - name: AWS_ACCESS_KEY_ID
-          value: "<your-access-key>"
-        - name: AWS_SECRET_ACCESS_KEY
-          value: "<your-secret-key>"
-        - name: AWS_SESSION_TOKEN
-          value: "<your-session-token>"
-        - name: AWS_DEFAULT_REGION
-          value: "us-east-1"
+        - name: OPENAI_API_KEY
+          value: "<your-api-key>"
 ---
 apiVersion: v1
 kind: Service
@@ -200,7 +201,7 @@ kubectl get pods
 kubectl get services
 ```
 
-**Important**: After updating AWS credentials in the YAML, you must restart the deployment:
+**Important**: After updating model credentials in the YAML, you must restart the deployment:
 ```bash
 kubectl rollout restart deployment <app-name>
 ```
@@ -245,9 +246,7 @@ kubectl rollout restart deployment <app-name>
 - **Connection refused**: Verify app is listening on 0.0.0.0:8080
 - **Image not found**: Ensure image is loaded with `kind load docker-image`
 - **Dependencies missing**: Check `pyproject.toml` and rebuild image
-- **"Unable to locate credentials"**: Verify AWS credentials are set and restart deployment
-- **AWS credentials not found**: Check environment variables with `kubectl exec <pod-name> -- env | grep AWS`
-- **Bedrock access denied**: Ensure your AWS role has `bedrock:InvokeModel` permissions
+- **"Unable to locate credentials"**: Verify model credentials are set and restart deployment
 
 ## Cleanup
 

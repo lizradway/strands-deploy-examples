@@ -7,7 +7,14 @@ from strands import Agent
 
 app = FastAPI(title="Strands Agent Server", version="1.0.0")
 
-strands_agent = Agent()
+# Note: Any supported model provider can be configured
+model = OpenAIModel(
+    client_args={
+        "api_key": "<your-api-key>",
+    },
+    model_id="gpt-4o",
+)
+strands_agent = Agent(model=model)
 
 class InvocationRequest(BaseModel):
     input: Dict[str, Any]

@@ -6,7 +6,7 @@ This guide covers deploying Python-based Strands agents using Docker for for loc
 
 - Python 3.10+
 - [Docker](https://www.docker.com/) installed and running
-- AWS credentials with Bedrock access permissions (or model provider of your choice)
+- Model provider credentials
 
 ---
 
@@ -19,13 +19,12 @@ Install uv:
 curl -LsSf https://astral.sh/uv/install.sh | sh
 ```
 
-Configure AWS Credentials:
+Configure Model Provider Credentials:
 ```bash
-export AWS_ACCESS_KEY_ID='<your-access-key>'
-export AWS_SECRET_ACCESS_KEY='<your-secret-key>'
-export AWS_SESSION_TOKEN='<your-session-token>'  # Required for temporary credentials
-export AWS_DEFAULT_REGION='us-east-1'
+export OPENAI_API_KEY='<your-api-key>'
 ```
+
+**Note**: This example uses OpenAI, but any supported model provider can be configured. See the [Strands documentation](https://strandsagents.com/latest/documentation/docs/user-guide/quickstart/python/#configuring-credentials) for other model providers.
 
 Create Project:
 ```bash
@@ -51,16 +50,17 @@ from typing import Dict, Any
 from datetime import datetime, timezone
 import os
 from strands import Agent
-from strands.models.bedrock import BedrockModel
 
 app = FastAPI(title="Strands Agent Server", version="1.0.0")
 
-bedrock_model = BedrockModel(
-    model_id="anthropic.claude-3-5-sonnet-20241022-v2:0",
-    params={"temperature": 0.7, "max_tokens": 1000}
+# Note: Any supported model provider can be configured
+model = OpenAIModel(
+    client_args={
+        "api_key": "<your-api-key>",
+    },
+    model_id="gpt-4o",
 )
-
-strands_agent = Agent(model=bedrock_model)
+strands_agent = Agent(model=model)
 
 class InvocationRequest(BaseModel):
     input: Dict[str, Any]
@@ -97,6 +97,7 @@ async def ping():
 if __name__ == "__main__":
     import uvicorn
     uvicorn.run(app, host="0.0.0.0", port=8080)
+
 ```
 
 Create Dockerfile:
@@ -124,13 +125,11 @@ docker build -t <image-name>:latest .
 
 ### Step 2: Run Docker Container
 
-Run the container with AWS credentials:
+Run the container with model provider credentials:
 ```bash
+# Example for OpenAI
 docker run -p 8080:8080 \
-  -e AWS_ACCESS_KEY_ID=$AWS_ACCESS_KEY_ID \
-  -e AWS_SECRET_ACCESS_KEY=$AWS_SECRET_ACCESS_KEY \
-  -e AWS_SESSION_TOKEN=$AWS_SESSION_TOKEN \
-  -e AWS_DEFAULT_REGION="us-east-1" \
+  -e OPENAI_API_KEY="<your-api-key>" \
   <image-name>:latest
 ```
 
@@ -162,10 +161,7 @@ docker stop $(docker ps -q --filter ancestor=<image-name>:latest)
 
 # Run new container
 docker run -p 8080:8080 \
-  -e AWS_ACCESS_KEY_ID=$AWS_ACCESS_KEY_ID \
-  -e AWS_SECRET_ACCESS_KEY=$AWS_SECRET_ACCESS_KEY \
-  -e AWS_SESSION_TOKEN=$AWS_SESSION_TOKEN \
-  -e AWS_DEFAULT_REGION="us-east-1" \
+  -e OPENAI_API_KEY=$OPENAI_API_KEY \
   <image-name>:latest
 ```
 
@@ -174,8 +170,6 @@ docker run -p 8080:8080 \
 - **Container not starting**: Check logs with `docker logs <container-id>`
 - **Connection refused**: Verify app is listening on 0.0.0.0:8080
 - **Image build fails**: Check `pyproject.toml` and dependencies
-- **"Unable to locate credentials"**: Verify AWS environment variables are set
-- **Bedrock access denied**: Ensure your AWS role has `bedrock:InvokeModel` permissions
 - **Port already in use**: Use different port mapping `-p 8081:8080`
 
 
@@ -208,7 +202,7 @@ docker push <registry-url>/<image-name>:latest
 
 2. **Deploy using your cloud provider's container service**:
    - Update image URL to use your registry: `<registry-url>/<image-name>:latest`
-   - Configure environment variables for AWS credentials
+   - Configure environment variables for model credentials
    - Deploy the container with port 8080 exposed
 
 **Note**: Your cloud service needs permissions to:
@@ -220,6 +214,7 @@ docker push <registry-url>/<image-name>:latest
 For easier management, create a `docker-compose.yml`:
 
 ```yaml
+# Example for OpenAI
 version: '3.8'
 services:
   <app-name>:
@@ -227,10 +222,7 @@ services:
     ports:
       - "8080:8080"
     environment:
-      - AWS_ACCESS_KEY_ID=<your-access-key>
-      - AWS_SECRET_ACCESS_KEY=<your-secret-key>
-      - AWS_SESSION_TOKEN=<your-session-token>
-      - AWS_DEFAULT_REGION=us-east-1
+      - OPENAI_API_KEY=<your-api-key>
 ```
 
 Run with Docker Compose:
