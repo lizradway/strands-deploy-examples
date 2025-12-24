@@ -10,14 +10,14 @@ Strands Agents can be deployed to various cloud platforms using containerization
 
 ### Docker
 
-Deploy Strands Agents locally using Docker containers:
+Deploy Strands Agents using Docker containers:
 
 - **Python** (`/docker/python/`) - Python-based Strands Agent with FastAPI
 - **TypeScript** (`/docker/typescript/`) - Node.js/TypeScript implementation
 
 ### Google Cloud Run
 
-Deploy Strands Agents to Google Cloud Run with the following language implementations:
+Deploy Strands Agents to Google Cloud Run:
 
 - **Python** (`/cloudrun/python/`) - Python-based Strands Agent with FastAPI
 - **TypeScript** (`/cloudrun/typescript/`) - Node.js/TypeScript implementation
