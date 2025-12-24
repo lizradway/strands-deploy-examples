@@ -256,7 +256,7 @@ Remove the Kind cluster when done:
 kind delete cluster --name <cluster-name>
 ```
 
-## Optional: Deploy to Cloud Kubernetes Cluster
+## Optional: Deploy Kubernetes Cluster to Cloud
 
 Once your application works locally with Kind, you can deploy it to any cloud-hosted Kubernetes cluster:
 
