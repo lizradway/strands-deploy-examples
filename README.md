@@ -8,12 +8,26 @@ Strands Agents can be deployed to various cloud platforms using containerization
 
 ## Available Examples
 
+### Docker
+
+Deploy Strands Agents locally using Docker containers:
+
+- **Python** (`/docker/python/`) - Python-based Strands Agent with FastAPI
+- **TypeScript** (`/docker/typescript/`) - Node.js/TypeScript implementation
+
 ### Google Cloud Run
 
 Deploy Strands Agents to Google Cloud Run with the following language implementations:
 
 - **Python** (`/cloudrun/python/`) - Python-based Strands Agent with FastAPI
 - **TypeScript** (`/cloudrun/typescript/`) - Node.js/TypeScript implementation
+
+### Kubernetes
+
+Deploy Strands Agents to Kubernetes clusters:
+
+- **Python** (`/kubernetes/python/`) - Python-based Strands Agent with FastAPI
+- **TypeScript** (`/kubernetes/typescript/`) - Node.js/TypeScript implementation
 
 ## Quick Start
 
@@ -25,22 +39,38 @@ Deploy Strands Agents to Google Cloud Run with the following language implementa
 ## Prerequisites
 
 - Docker installed locally
-- Access to your chosen cloud platform (Google Cloud, etc.)
+- Access to your chosen cloud platform (Google Cloud, Kubernetes cluster, etc.)
 - Strands Agent installed + configured 
 
 ## Project Structure
 
 ```
 strands-deploy-examples/
+├── docker/
+│   ├── python/          # Python Docker implementation
+│   │   ├── README.md    # Docker deployment guide
+│   └── typescript/      # TypeScript Docker implementation
+│       └── README.md    # Docker deployment guide
 ├── cloudrun/
-│   ├── python/          # Python implementation
+│   ├── python/          # Python Cloud Run implementation
 │   │   ├── agent.py     # Main agent code
 │   │   ├── Dockerfile   # Container configuration
 │   │   └── requirements.txt
-│   └── typescript/      # TypeScript implementation
+│   └── typescript/      # TypeScript Cloud Run implementation
 │       ├── index.ts     # Main agent code
 │       ├── Dockerfile   # Container configuration
 │       └── package.json
+├── kubernetes/
+│   ├── python/          # Python Kubernetes implementation
+│   │   ├── README.md    # Kubernetes deployment guide
+│   │   ├── agent.py     # Main agent code
+│   │   ├── Dockerfile   # Container configuration
+│   │   └── k8s-deployment.yaml
+│   └── typescript/      # TypeScript Kubernetes implementation
+│       ├── README.md    # Kubernetes deployment guide
+│       ├── index.ts     # Main agent code
+│       ├── Dockerfile   # Container configuration
+│       └── k8s-deployment.yaml
 └── README.md
 ```
 

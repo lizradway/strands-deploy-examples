@@ -1,6 +1,6 @@
 # TypeScript Deployment to Kubernetes
 
-This guide covers deploying TypeScript-based Strands agents to Kubernetes using Kind (Kubernetes in Docker) for local development.
+This guide covers deploying TypeScript-based Strands agents to Kubernetes using Kind (Kubernetes in Docker) for for local and cloud development.
 
 ## Prerequisites
 
@@ -143,18 +143,16 @@ app.listen(PORT, '0.0.0.0', () => {
 
 Create Dockerfile:
 ```dockerfile
-FROM node:20-alpine
+# Use Node 20+
+FROM node:20
 
 WORKDIR /app
 
-# Copy package files
-COPY package*.json ./
+# Copy source code
+COPY . ./
 
 # Install dependencies
 RUN npm install
-
-# Copy source code
-COPY . .
 
 # Build TypeScript
 RUN npm run build

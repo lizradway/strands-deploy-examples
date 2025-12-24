@@ -1,6 +1,6 @@
 # Python Deployment to Kubernetes
 
-This guide covers deploying Python-based Strands agents to Kubernetes using Kind (Kubernetes in Docker) for local development.
+This guide covers deploying Python-based Strands agents to Kubernetes using Kind (Kubernetes in Docker) for local and cloud development.
 
 ## Prerequisites
 
