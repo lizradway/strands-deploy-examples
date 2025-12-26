@@ -30,7 +30,7 @@ Create Project:
 ```bash
 mkdir <app-name> && cd <app-name>
 uv init --python 3.11
-uv add fastapi uvicorn[standard] pydantic strands-agents
+uv add fastapi uvicorn[standard] pydantic strands-agents strands-agents[openai]
 ```
 
 Project Structure:
@@ -54,8 +54,8 @@ from strands.models.openai import OpenAIModel
 app = FastAPI(title="Strands Agent Server", version="1.0.0")
 
 # Note: Any supported model provider can be configured
-# Automatically uses process.env.OPENAI_API_KEY and defaults to gpt-4o
-model = OpenAIModel()
+# Automatically uses process.env.OPENAI_API_KEY
+model = OpenAIModel(model_id="gpt-4o")
 
 strands_agent = Agent(model=model)
 
@@ -134,7 +134,7 @@ Run the container with model provider credentials:
 ```bash
 # Example for OpenAI
 docker run -p 8080:8080 \
-  -e OPENAI_API_KEY="<your-api-key>" \
+  -e OPENAI_API_KEY=$OPENAI_API_KEY \
   <image-name>:latest
 ```
 
@@ -209,6 +209,8 @@ docker push <registry-url>/<image-name>:latest
    - Update image URL to use your registry: `<registry-url>/<image-name>:latest`
    - Configure environment variables for model credentials
    - Deploy the container with port 8080 exposed
+
+   See deployment to [AWS Elastic Container Registry](https://strandsagents.com/latest/documentation/docs/user-guide/deploy/deploy_to_bedrock_agentcore/python/#step-4-prepare-your-docker-image) for example.
 
 **Note**: Your cloud service needs permissions to:
 - Pull images from your container registry

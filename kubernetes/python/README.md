@@ -40,7 +40,7 @@ Create Project:
 ```bash
 mkdir <app-name> && cd <app-name>
 uv init --python 3.11
-uv add fastapi uvicorn[standard] pydantic strands-agents
+uv add fastapi uvicorn[standard] pydantic strands-agents strands-agents[openai]
 ```
 
 Project Structure:

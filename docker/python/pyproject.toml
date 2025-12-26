@@ -5,9 +5,8 @@ description = "Add your description here"
 readme = "README.md"
 requires-python = ">=3.11"
 dependencies = [
-    "boto3>=1.42.16",
-    "fastapi>=0.127.0",
+    "fastapi>=0.127.1",
     "pydantic>=2.12.5",
-    "strands-agents>=1.20.0",
+    "strands-agents[openai]>=1.20.0",
     "uvicorn[standard]>=0.40.0",
 ]
